@@ -7,7 +7,7 @@ class GenerateSlugMixin(models.Model):
     slug = models.SlugField()    
 
     def save(self, *args, **kwargs):
-        self.slug = slugify(f"{getattr(self, "name")} {self.pk}")
+        self.slug = slugify(f"{getattr(self, 'name')} {self.pk}")
         return super().save(*args, **kwargs)
     
     class Meta:
