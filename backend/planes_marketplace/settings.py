@@ -33,7 +33,7 @@ ALLOWED_HOSTS = [
     os.environ.get("VERCEL_HOST")
 ]
 
-WSGI_APPLICATION = 'planes_marketplace.wsgi.application'
+WSGI_APPLICATION = 'planes_marketplace.wsgi.app'
 
 # Application definition
 
