@@ -92,6 +92,8 @@
 	import { comparePlanesStore } from '$lib/comparePlanes';
     import type { Plane, PaginatedResponse } from '$lib';
 
+    import { PUBLIC_BACKEND_API } from '$env/static/public';
+
     let planesResult: PaginatedResponse<Plane>;
     $: planes = planesResult ? planesResult.results : [];
 
@@ -115,7 +117,7 @@
     const fetchPlanes = async () => {
         loading = true;
         
-        const apiUrl = new URL("http://127.0.0.1:8000/api/planes/");
+        const apiUrl = new URL("/api/planes/", PUBLIC_BACKEND_API);
         apiUrl.searchParams.append("limit", paginationSettings.limit.toString());
         apiUrl.searchParams.append("page", (paginationSettings.page + 1).toString());
         
