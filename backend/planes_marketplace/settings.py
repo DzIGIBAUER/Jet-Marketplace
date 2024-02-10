@@ -33,8 +33,6 @@ ALLOWED_HOSTS = [
     os.environ.get("VERCEL_HOST")
 ]
 
-WSGI_APPLICATION = 'planes_marketplace.wsgi.app'
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -81,7 +79,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'planes_marketplace.wsgi.application'
+WSGI_APPLICATION = 'planes_marketplace.wsgi.app'
 
 
 # Database
@@ -89,8 +87,11 @@ WSGI_APPLICATION = 'planes_marketplace.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql' if 'POSTGRES_DATABASE' in os.environ else 'django.db.backends.sqlite3',
+        'NAME': os.environ.get("POSTGRES_DATABASE", BASE_DIR / 'db.sqlite3'),
+        'USER': os.environ.get("POSTGRES_USER"),
+        'HOST': os.environ.get("POSTGRES_HOST"),
+        'PASSWORD': os.environ.get("POSTGRES_PASSWORD"),
     }
 }
 
