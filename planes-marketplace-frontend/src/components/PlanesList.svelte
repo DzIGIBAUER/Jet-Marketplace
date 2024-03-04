@@ -2,9 +2,76 @@
 
 <div class="p-4">
     
-    <Paginator
-        bind:settings={paginationSettings}
-    />
+    <div class="flex flex-col justify-center items-center px-8 gap-8 lg:flex-row">
+        
+        <div class="flex gap-2 flex-col">
+
+            <div class="input-group input-group-divider grid-cols-[auto_1fr_auto]">
+                <div class="input-group-shim">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16">
+                        <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"/>
+                    </svg>
+                </div>
+                <input type="search" placeholder="Search" bind:value={filters.searchQuery} class="p-1" />
+            </div>
+            
+            <select bind:value={filters.orderBy} class="select">
+                <option value="name" selected>Name</option>
+                <option value="range">Range</option>
+            </select>
+            
+            <select bind:value={filters.ordering} class="select">
+                <option value="ascending" selected>Ascending</option>
+                <option value="descending">Descending</option>
+            </select>
+    
+        </div>
+
+        <div>
+
+            <p>Range</p>
+            <div class="">
+                <!-- not using bind:value={} because we want to refetch planes when value finnaly changes, not while user is typing -->
+                <div class="input-group input-group-divider grid-cols-[auto_1fr_auto] w-min">
+                    <div class="input-group-shim">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-align-start" viewBox="0 0 16 16">
+                            <path fill-rule="evenodd" d="M1.5 1a.5.5 0 0 1 .5.5v13a.5.5 0 0 1-1 0v-13a.5.5 0 0 1 .5-.5"/>
+                            <path d="M3 7a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/>
+                        </svg>
+                    </div>
+                    <input class="input p-1" type="number" placeholder="Min" bind:value={filters.rangeMin} />
+                    <p class="p-2">km</p>
+                </div>
+
+                <div class="input-group input-group-divider grid-cols-[auto_1fr_auto] w-min">
+                    <div class="input-group-shim">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-align-end" viewBox="0 0 16 16">
+                            <path fill-rule="evenodd" d="M14.5 1a.5.5 0 0 0-.5.5v13a.5.5 0 0 0 1 0v-13a.5.5 0 0 0-.5-.5"/>
+                            <path d="M13 7a1 1 0 0 0-1-1H2a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1z"/>
+                        </svg>
+                    </div>
+                    <input class="input p-1" type="number" placeholder="Max" bind:value={filters.rangeMax} />
+                    <p class="p-2">km</p>
+                </div>
+                
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="flex flex-col px-8 pt-8 gap-8">
+        
+        <button type="button" disabled={!filtersChanged} class="btn variant-filled w-min" on:click={fetchPlanes}>Apply filters</button>
+
+        <Paginator bind:settings={paginationSettings} />
+    </div>
+
+    {#if !planes.length}
+        <div class="flex justify-center items-center p-8">
+            <p class="text-warning-900">No results</p>
+        </div>
+    {/if}
 
     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 p-4 gap-4">
 
@@ -77,7 +144,6 @@
                         </div>
                     </footer>
                 </div>
-
             {/each}
 
         {/if}
@@ -91,6 +157,8 @@
     import { Paginator, type PaginationSettings } from '@skeletonlabs/skeleton';
 	import { comparePlanesStore } from '$lib/comparePlanes';
     import type { Plane, PaginatedResponse } from '$lib';
+
+    import { onMount } from 'svelte';
 
     import { PUBLIC_BACKEND_API } from '$env/static/public';
 
@@ -108,24 +176,46 @@
         size: 0
     } satisfies PaginationSettings;
 
+    let filters = {
+        orderBy: "name",
+        ordering: "ascending",
+        rangeMin: 0,
+        rangeMax: 30000,
+        searchQuery: "hello"
+    }
+
+    let filtersChanged = false;
+
+    $: console.log(filters);
+    
     $: if(planesResult && paginationSettings.size != planesResult.count) paginationSettings.size = planesResult.count;
 
-    $: if (paginationSettings) fetchPlanes();
+    $: if (paginationSettings || filters) filtersChanged = true;
 
     $: if (planes && planesChanged) planesChanged(planes);
 
     const fetchPlanes = async () => {
+        filtersChanged = false;
         loading = true;
         
         const apiUrl = new URL("/api/planes/", PUBLIC_BACKEND_API);
         apiUrl.searchParams.append("limit", paginationSettings.limit.toString());
         apiUrl.searchParams.append("page", (paginationSettings.page + 1).toString());
+
+        apiUrl.searchParams.append("order_by", `${filters.ordering == "descending" ? '-' : ''}${filters.orderBy}`);
+        apiUrl.searchParams.append("range__gt", filters.rangeMin.toString());
+        apiUrl.searchParams.append("range__lt", filters.rangeMax.toString());
+        apiUrl.searchParams.append("name__contains", filters.searchQuery);
         
         const data = await fetch(apiUrl.href);
         planesResult = await data.json();
         
         loading = false;
     }
+
+    onMount(() => {
+        fetchPlanes();
+    });
 
     const addToCompare = (plane: Plane) => {
         $comparePlanesStore = {
